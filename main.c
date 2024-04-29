@@ -1,6 +1,4 @@
-#include <EEPROM.h>   // para EEPROM.write(),
-					            //      EEPROM.read(),
-						          //      EEPROM.update()
+#include <EEPROM.h>   // para EEPROM.write(), EEPROM.read(), EEPROM.update()
 
 #define SENHA_LARGURA 4
 
@@ -29,7 +27,7 @@ void loop() {
 }
 
 // Parâmetros: 	senha, int[]
-// 				      largura, int
+// 		largura, int
 // Armazena a senha passada como argumento na EEPROM
 void salvar_senha(int senha[], int largura) {
   for (int i = 0; i < largura; i++) {
@@ -38,7 +36,7 @@ void salvar_senha(int senha[], int largura) {
 }
 
 // Parâmetros: 	destino, int[]
-// 				      largura, int
+// 		largura, int
 // Adquire a senha armazenada na EEPROM e salva no destino
 void resgatar_senha(int destino[], int largura) {
   for (int i = 0; i < largura; i++) {
