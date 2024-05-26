@@ -3,12 +3,12 @@
 #define TAMANHO_MEMORIA 20
 
 // Para testes, apenas.
-int memoria[] = {
-  -1, -1, -1, -1,
-  -1, -1, -1, -1,
-  -1, -1, -1, -1,
-  -1, -1, -1, -1,
-  -1, -1, -1, -1,
+char memoria[] = {
+  ' ', ' ', ' ', ' ',
+  ' ', ' ', ' ', ' ',
+  ' ', ' ', ' ', ' ',
+  ' ', ' ', ' ', ' ',
+  ' ', ' ', ' ', ' ',
 };
 // Endereço de cada senha na memória.
 // Criado apenas para o código ficar mais legível.
@@ -16,76 +16,89 @@ const int senha_enderecos[] = {
   0, 4, 8, 12, 16
 };
 
-bool porta_aberta = false;
-
 // Importante: a senha de adm ficará sempre
 // no endereço zero.
 // Logo, para ter a senha de adm:
 // resgatar_senha(0, adm_senha);
-int adm_senha[LARGURA_SENHA] = {1, 2, 3, 4};
-int senha_teste[] = { 4, 3, 2, 1 };
+char adm_senha[LARGURA_SENHA] = {'1', '2', '3', '4'};
+char senha_teste[] = { '4', '3', '2', '1' };
 
-
-int senha_para_int(int[]);
+String senha_para_string(char[]);
 bool memoria_vazia();
 int pegar_endereco_livre();
-bool salvar_senha(int[]);
-bool senhas_iguais(int[], int[]);
-void resgatar_senha(int, int[]);
-bool senha_valida(int[]);
+bool salvar_senha(char[]);
+void resgatar_senha(int, char[]);
+bool senhas_iguais(char[], char[]);
+bool validar_senha(char[]);
+bool apagar_senha(char[]);
+
+bool porta_aberta = false;
+bool adm_logou = false;
 
 void setup() {
   Serial.begin(9600);
   
-  if (memoria_vazia())
+  if (memoria_vazia()) {
+    // Lógica para registrar a primeira senha
+    // ...
+    
     if (salvar_senha(adm_senha))
-      Serial.println("Senha de adm salva.");
-    else
-      Serial.println("Deu erro, amigo. Ferrou!");
+      adm_logou = true; // funcionalidades disponíveis
+  }
   
-  // Pegando a senha de adm
-  resgatar_senha(0, adm_senha);
-  Serial.print("Senha de adm: ");
-  Serial.println(senha_para_int(adm_senha));
-  
-  if (senhas_iguais(senha_teste, adm_senha))
-    Serial.println("Eh o adm");
-  else
-    Serial.println("Eh um qualquer");
-  
-  if(!salvar_senha(senha_teste))
-    Serial.println("Deu M");
-  
-  if (senha_valida(senha_teste))
+  // Botão para abrir a porta
+  // ...
+  if (adm_logou || validar_senha(senha_teste)) {
     porta_aberta = true;
+  }
   
-  // Abrindo a porta
-  if (porta_aberta)
-    Serial.println("Abriu-se a porta!");
-  else
-    Serial.println("Escreveu errado, amigo.");
+  // Botão para adicionar nova senha
+  // ...
+  if (adm_logou) {
+    // Pegar a senha pelo input
+    // ...
+    
+    if (salvar_senha(senha_teste)) {
+      porta_aberta = true;
+    } else {
+      // É, fica por conta do output
+    }
+  } else {
+    // Se não é ADM, lamento...
+  }
+  
+  // Botão para remover uma senha
+  // ...
+  if (adm_logou) {
+    // Pega a senha pelo input
+    // ...
+    
+    if(apagar_senha(senha_teste)) {
+      // Morreu a senha
+    } else {
+      // Existe não hein
+    }
+  } else {
+    // Se não é ADM, lamento...
+  }
 }
 
 void loop() {
-  
 }
 
-// Converte o array de inteiros para um número.
-int senha_para_int(int arr[]) {
-  int n = 0;
-  int casa = 1;
-  
-  for (int i = LARGURA_SENHA-1; i >= 0; i--) {
-    n += arr[i] * casa;
-    casa *= 10;
+// Converte o array de char para String
+String senha_para_string(char senha[]) {
+  String s = String();
+  for (int i = 0; i < LARGURA_SENHA; i++) {
+    s += senha[i];
   }
   
-  return n;
+  return s;
 }
 
 bool memoria_vazia() {
   for (int i = 0; i < TAMANHO_MEMORIA; i++) {
-    if (memoria[i] > 0)
+    if (memoria[i] != ' ')
       return false;
   }
   return true;
@@ -95,13 +108,13 @@ bool memoria_vazia() {
 // Caso não encontre, retorna -1.
 int pegar_endereco_livre() {
   for (int i = 0; i < QUANTIDADE_SENHAS; i++) {
-    if (memoria[i] < 0)
+    if (memoria[i] == ' ')
       return i;
   }
   return -1; // não há endereços livres
 }
 
-bool salvar_senha(int senha[]) {
+bool salvar_senha(char senha[]) {
   int endereco = pegar_endereco_livre();
   if (endereco < 0) return false; // não há endereços livres
   
@@ -112,7 +125,13 @@ bool salvar_senha(int senha[]) {
   return true;
 }
 
-bool senhas_iguais(int s1[], int s2[]) {
+void resgatar_senha(int endereco, char destino[]) {
+  for (int i = 0; i < LARGURA_SENHA; i++) {
+    destino[i] = memoria[endereco+i];
+  }
+}
+
+bool senhas_iguais(char s1[], char s2[]) {
   for (int i = 0; i < LARGURA_SENHA; i++) {
     if (s1[i] != s2[i])
       return false;
@@ -120,19 +139,28 @@ bool senhas_iguais(int s1[], int s2[]) {
   return true;
 }
 
-void resgatar_senha(int endereco, int destino[]) {
-  for (int i = 0; i < LARGURA_SENHA; i++) {
-    destino[i] = memoria[endereco+i];
-  }
-}
-
 // Compara uma senha com todas salvas
-bool senha_valida(int senha[]) {
-  int s[LARGURA_SENHA];
+bool validar_senha(char senha[]) {
+  char s[LARGURA_SENHA];
+  
   for (int i = 0; i < QUANTIDADE_SENHAS; i++) {
-    resgatar_senha(senha_enderecos[i], s); // pegando a próxima senha
+    resgatar_senha(senha_enderecos[i], s);
     if (senhas_iguais(senha, s))
       return true;
   }
   return false;
+}
+
+bool apagar_senha(char senha[]) {
+  char s[LARGURA_SENHA];
+  for (int i = 0; i < QUANTIDADE_SENHAS; i++) {
+    resgatar_senha(senha_enderecos[i], s);
+    if (senhas_iguais(senha, s)) {
+      for (int j = 0; j < LARGURA_SENHA; j++) {
+        memoria[senha_enderecos[i]+j] = ' ';
+      }
+      return true;
+    }
+  }
+  return false; // senha não existe
 }
