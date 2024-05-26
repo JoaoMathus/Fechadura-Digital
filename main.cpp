@@ -1,19 +1,17 @@
+#include <EEPROM.h>
+
 #define LARGURA_SENHA 4
 #define QUANTIDADE_SENHAS 5
-#define TAMANHO_MEMORIA 20
 
-// Para testes, apenas.
-char memoria[] = {
-  ' ', ' ', ' ', ' ',
-  ' ', ' ', ' ', ' ',
-  ' ', ' ', ' ', ' ',
-  ' ', ' ', ' ', ' ',
-  ' ', ' ', ' ', ' ',
-};
-// Endereço de cada senha na memória.
-// Criado apenas para o código ficar mais legível.
-const int senha_enderecos[] = {
-  0, 4, 8, 12, 16
+// Guarda o endereço das senhas
+// e se está em uso, ou não
+// (0 -> não está em uso, 1 -> em uso)
+int senhas_usadas[QUANTIDADE_SENHAS][2] {
+  {0, 0},
+  {4, 0},
+  {8, 0},
+  {12, 0},
+  {16, 0}
 };
 
 // Importante: a senha de adm ficará sempre
@@ -21,7 +19,7 @@ const int senha_enderecos[] = {
 // Logo, para ter a senha de adm:
 // resgatar_senha(0, adm_senha);
 char adm_senha[LARGURA_SENHA] = {'1', '2', '3', '4'};
-char senha_teste[] = { '4', '3', '2', '1' };
+char senha_teste[] = {'4', '3', '2', '1'};
 
 String senha_para_string(char[]);
 bool memoria_vazia();
@@ -41,9 +39,12 @@ void setup() {
   if (memoria_vazia()) {
     // Lógica para registrar a primeira senha
     // ...
+    Serial.println("Pegando a primeria senha");
     
-    if (salvar_senha(adm_senha))
+    if (salvar_senha(adm_senha)) {
       adm_logou = true; // funcionalidades disponíveis
+      Serial.println("Senha de adm salva.");
+    }
   }
   
   // Botão para abrir a porta
@@ -60,6 +61,7 @@ void setup() {
     
     if (salvar_senha(senha_teste)) {
       porta_aberta = true;
+      Serial.println("Senha de teste salva.");
     } else {
       // É, fica por conta do output
     }
@@ -74,13 +76,23 @@ void setup() {
     // ...
     
     if(apagar_senha(senha_teste)) {
-      // Morreu a senha
+      Serial.println("Senha de teste apagada.");
     } else {
       // Existe não hein
     }
   } else {
     // Se não é ADM, lamento...
   }
+  
+  // Debug
+  char debug_senha[LARGURA_SENHA];
+  for (int i = 0; i < QUANTIDADE_SENHAS; i++) {
+    if (senhas_usadas[i][1]) {
+      resgatar_senha(senhas_usadas[i][0], debug_senha);
+      Serial.println(senha_para_string(debug_senha));
+    }
+  }
+  
 }
 
 void loop() {
@@ -97,29 +109,37 @@ String senha_para_string(char senha[]) {
 }
 
 bool memoria_vazia() {
-  for (int i = 0; i < TAMANHO_MEMORIA; i++) {
-    if (memoria[i] != ' ')
+  for (int i = 0; i < QUANTIDADE_SENHAS; i++) {
+    if (senhas_usadas[i][1] > 0)
       return false;
   }
   return true;
 }
 
-// Percorre a memória para encontrar um espaço livre.
-// Caso não encontre, retorna -1.
+// Retorna o próximo endereço livre,
+// caso contrário retorna -1.
 int pegar_endereco_livre() {
   for (int i = 0; i < QUANTIDADE_SENHAS; i++) {
-    if (memoria[i] == ' ')
-      return i;
+    if (senhas_usadas[i][1] == 0)
+      return senhas_usadas[i][0]; // retornando o endereço
   }
-  return -1; // não há endereços livres
+  
+  return -1;
 }
 
 bool salvar_senha(char senha[]) {
   int endereco = pegar_endereco_livre();
   if (endereco < 0) return false; // não há endereços livres
   
+  // Marcando o endereço como usado.
+  for (int i = 0; i < QUANTIDADE_SENHAS; i++) {
+    if (senhas_usadas[i][0] == endereco)
+      senhas_usadas[i][1] = 1;
+  }
+  
+  // Salvando a senha.
   for (int i = 0; i < LARGURA_SENHA; i++) {
-    memoria[endereco+i] = senha[i]; // escrevendo na memória
+    EEPROM.update(endereco+i, senha[i]);
   }
   
   return true;
@@ -127,7 +147,7 @@ bool salvar_senha(char senha[]) {
 
 void resgatar_senha(int endereco, char destino[]) {
   for (int i = 0; i < LARGURA_SENHA; i++) {
-    destino[i] = memoria[endereco+i];
+    destino[i] = EEPROM.read(endereco+i);
   }
 }
 
@@ -144,23 +164,31 @@ bool validar_senha(char senha[]) {
   char s[LARGURA_SENHA];
   
   for (int i = 0; i < QUANTIDADE_SENHAS; i++) {
-    resgatar_senha(senha_enderecos[i], s);
+    resgatar_senha(senhas_usadas[i][0], s);
     if (senhas_iguais(senha, s))
       return true;
   }
+  
   return false;
 }
 
 bool apagar_senha(char senha[]) {
   char s[LARGURA_SENHA];
   for (int i = 0; i < QUANTIDADE_SENHAS; i++) {
-    resgatar_senha(senha_enderecos[i], s);
+    resgatar_senha(senhas_usadas[i][0], s);
     if (senhas_iguais(senha, s)) {
-      for (int j = 0; j < LARGURA_SENHA; j++) {
-        memoria[senha_enderecos[i]+j] = ' ';
-      }
-      return true;
+      senhas_usadas[i][1] = 0; // marcando como não usada.
+      return true; // sucesso na operação.
     }
   }
-  return false; // senha não existe
+  
+  return false; // não existe essa senha.
+}
+
+// Apaga todas as senhas exceto a senha de
+// administrador
+void apagar_todas_senhas() {
+  for (int i = 4; i < QUANTIDADE_SENHAS-1; i++) {
+    senhas_usadas[i][1] = 0;
+  }
 }
