@@ -5,6 +5,7 @@
 #define LARGURA_SENHA 4
 #define QUANTIDADE_SENHAS 5
 #define ADM_ENDERECO 0 // endereço da senha de administrador
+#define TENTATIVAS_MAXIMAS 5
 
 // Globais
 Adafruit_LiquidCrystal lcd(0);
@@ -29,6 +30,9 @@ char tecla_temp;
 char input_senha[LARGURA_SENHA];
 bool porta_aberta = false;
 bool adm_logou = false;
+int tentativas = 0;
+unsigned long segundos = 1000UL;
+unsigned long minutos = segundos * 60;
 
 // Guarda o endereço das senhas.
 int enderecos_senhas[QUANTIDADE_SENHAS]{
@@ -100,6 +104,13 @@ void loop()
 {
     porta_aberta = false;
 
+    if (tentativas >= TENTATIVAS_MAXIMAS)
+    {
+        tentativas = 0;
+        lcd_print("PORTA TRAVADA...", 0);
+        delay(20 * minutos);
+    }
+
     // Pegar senha do teclado e guardar em input_senha
     ler_senha();
 
@@ -108,10 +119,11 @@ void loop()
 
     if (adm_logou)
     {
+        tentativas = 0;
+        senha_adm_behavior();
+
         while (adm_logou)
         {
-            senha_adm_behavior();
-
             lcd.clear();
             lcd.setCursor(0, 0);
             lcd.print("Pressione");
@@ -136,6 +148,7 @@ void loop()
                 if (salvar_senha(input_senha))
                 {
                     lcd_print("Senha salva", 0);
+                    delay(700);
                 }
                 else
                 {
@@ -147,6 +160,8 @@ void loop()
             if (tecla_temp == 'D')
             {
                 modificar_adm_senha(input_senha);
+                lcd_print("Senha adm salva", 0);
+                delay(700);
             }
 
             // Botão para remover uma senha
@@ -160,10 +175,12 @@ void loop()
                     if (apagar_senha(input_senha))
                     {
                         lcd_print("Senha apagada", 0);
+                        delay(700);
                     }
                     else
                     {
                         lcd_print("Senha nao existe", 0);
+                        delay(700);
                     }
                 }
                 else
@@ -179,6 +196,7 @@ void loop()
                 {
                     apagar_todas_senhas();
                     lcd_print("Tudo apagado...", 0);
+                    delay(700);
                     break;
                 }
                 else
@@ -193,6 +211,7 @@ void loop()
         // Usuário normal pode apenas abrir a porta
         if (validar_senha(input_senha))
         {
+            tentativas = 0;
             porta_aberta = true;
             senha_correta_behavior();
             fechar_porta(3000);
@@ -202,6 +221,7 @@ void loop()
             // Senha errada
             lcd.clear();
             senha_incorreta_behavior();
+            tentativas++;
         }
     }
 }
@@ -245,6 +265,12 @@ int pegar_endereco_livre()
 // Salvando a senha na EEPROM.
 bool salvar_senha(char senha[])
 {
+    char adm[LARGURA_SENHA];
+
+    resgatar_senha(0, adm);
+    if (senhas_iguais(senha, adm))
+        return false;
+
     int endereco = pegar_endereco_livre();
     if (endereco < 0)
         return false; // não há endereços livres
@@ -414,7 +440,7 @@ void senha_correta_behavior()
 void senha_adm_behavior()
 {
     lcd_print("ADM entrou", 0);
-    tone(buzzer, 390, 300);
+    tone(buzzer, 262, 300);
     delay(350);
     tone(buzzer, 400, 500);
     blink_color(0, 0, 255);
