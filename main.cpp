@@ -7,6 +7,7 @@
 #define ADM_ENDERECO 0 // endereço da senha de administrador
 #define TENTATIVAS_MAXIMAS 5
 #define TEMPO_TRAVADO 1
+#define DELAY_PADRAO 700
 
 // Globais
 Adafruit_LiquidCrystal lcd(0);
@@ -83,7 +84,7 @@ void setup()
     if (tem_adm())
     {
         lcd_print("Primeiro uso", 0);
-        delay(600);
+        delay(DELAY_PADRAO);
 
         // Ler senha do teclado e guardar em input_senha
         ler_senha();
@@ -149,11 +150,12 @@ void loop()
                 if (salvar_senha(input_senha))
                 {
                     lcd_print("Senha salva", 0);
-                    delay(700);
+                    delay(DELAY_PADRAO);
                 }
                 else
                 {
                     lcd_print("Erro ao salvar", 0);
+                    delay(DELAY_PADRAO);
                 }
             }
 
@@ -162,7 +164,7 @@ void loop()
             {
                 modificar_adm_senha(input_senha);
                 lcd_print("Senha adm salva", 0);
-                delay(700);
+                delay(DELAY_PADRAO);
             }
 
             // Botão para remover uma senha
@@ -176,12 +178,12 @@ void loop()
                     if (apagar_senha(input_senha))
                     {
                         lcd_print("Senha apagada", 0);
-                        delay(700);
+                        delay(DELAY_PADRAO);
                     }
                     else
                     {
                         lcd_print("Senha nao existe", 0);
-                        delay(700);
+                        delay(DELAY_PADRAO);
                     }
                 }
                 else
@@ -197,7 +199,7 @@ void loop()
                 {
                     apagar_todas_senhas();
                     lcd_print("Tudo apagado...", 0);
-                    delay(700);
+                    delay(DELAY_PADRAO);
                     break;
                 }
                 else
@@ -360,7 +362,7 @@ bool apagar_senha(char senha[])
 void modificar_adm_senha(char nova_senha[])
 {
     lcd_print("Nova senha adm..", 0);
-    delay(700);
+    delay(DELAY_PADRAO);
     ler_senha();
 
     for (int i = 0; i < LARGURA_SENHA; i++)
