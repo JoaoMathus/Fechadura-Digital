@@ -472,9 +472,10 @@ void ler_senha()
         // e printa um espaço para poder apagar o valor ali.
         else if (pressionado == 'A')
         {
+          if (lcd_coluna > 0) {
             lcd_coluna -= 1;
             lcd.setCursor(lcd_coluna, 1);
-            lcd.print(' ');
+            lcd.print(' '); }
         }
         // Se a tecla D for pressionada, apaga tudo que está na tela e
         // reseta a posição do cursor.
