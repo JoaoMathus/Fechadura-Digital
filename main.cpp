@@ -6,6 +6,7 @@
 #define QUANTIDADE_SENHAS 5
 #define ADM_ENDERECO 0 // endereço da senha de administrador
 #define TENTATIVAS_MAXIMAS 5
+#define TEMPO_TRAVADO 1
 
 // Globais
 Adafruit_LiquidCrystal lcd(0);
@@ -108,7 +109,7 @@ void loop()
     {
         tentativas = 0;
         lcd_print("PORTA TRAVADA...", 0);
-        delay(20 * minutos);
+        delay(TEMPO_TRAVADO * minutos);
     }
 
     // Pegar senha do teclado e guardar em input_senha
